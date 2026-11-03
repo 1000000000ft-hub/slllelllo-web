@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dandelion cutter</title>
+  <style>
+    /* --- Local Offbit Font Declaration with Fallbacks --- */
+    @font-face {
+      font-family: 'Offbit';
+      src: local('Offbit'), local('Offbit-Bold'), local('Offbit-101');
+      font-weight: 400 900;
+      font-style: normal;
+    }
+
+    /* --- Strict Non-Scroll Layout --- */
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #FFFFFF;
+      font-family: 'Offbit', 'Courier New', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      color: #000000;
+      letter-spacing: -0.2px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* --- Layer 1: Stars Canvas (Under video) --- */
+    #stars-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* --- Layer 2: Core Central Box --- */
+    #core-box {
+      position: relative;
+      z-index: 10;
+      width: 860px;
+      height: 520px;
+      background: #FFFFFF;
+      border: 1.5px solid #000000;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Box Header */
+    #header-bar {
+      height: 32px;
+      border-bottom: 1.5px solid #000000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-size: 11px;
+      background: #FFFFFF;
+    }
+
+    .header-left, .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-heart {
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.1s ease;
+    }
+    .btn-heart:hover {
+      color: #ff3366;
+      transform: scale(1.15);
+    }
+
+    .ig-link {
+      border-bottom: 1px dotted #000000;
+    }
+    .ig-link:hover {
+      background: #000000;
+      color: #FFFFFF;
+    }
+
+    /* Box Split Body */
+    #split-body {
+      display: flex;
+      flex: 1;
+      height: calc(100% - 32px);
+      position: relative;
+    }
+
+    /* Left Menu Area */
+    #left-menu {
+      width: 48%;
+      border-right: 1.5px solid #000000;
+      padding: 30px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 22px;
+    }
+
+    .menu-item {
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      display: inline-block;
+      width: fit-content;
+      transition: transform 0.05s ease;
+      will-change: filter, transform;
+    }
+    .menu-item:hover {
+      transform: translateX(4px);
+      color: #333333;
+    }
+
+    /* Jagged dynamic filter trigger */
+    .distort-active {
+      filter: url(#jagged-distortion);
+      color: #000000;
+      transform: scale(1.03) skewX(-2deg);
+    }
+
+    /* Right Media Area */
+    #right-media {
+      width: 52%;
+      height: 100%;
+      position: relative;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #stage-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* --- Layer 3: Interactive Module Modals / Overlays --- */
+    .module-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.98);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      padding: 18px 24px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .module-overlay.active {
+      display: flex;
+    }
+
+    .module-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1.5px solid #000000;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .btn-close {
+      cursor: pointer;
+      padding: 2px 8px;
+      border: 1px solid #000000;
+    }
+    .btn-close:hover {
+      background: #000000;
+      color: #FFFFFF;
+    }
+
+    /* Album Module (1) */
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .album-card {
+      border: 1.5px solid #000000;
+      padding: 12px;
+      background: #FFFFFF;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .album-card:nth-child(1):hover {
+      box-shadow: 0 0 16px rgba(0, 119, 255, 0.8);
+      border-color: #0077ff;
+    }
+    .album-card:nth-child(2):hover {
+      box-shadow: 0 0 16px rgba(100, 255, 120, 0.8);
+      border-color: #64ff78;
+    }
+    .album-card:nth-child(3):hover {
+      box-shadow: 0 0 16px rgba(175, 75, 255, 0.8);
+      border-color: #af4bff;
+    }
+    .album-card:nth-child(4):hover {
+      box-shadow: 0 0 16px rgba(255, 75, 180, 0.8);
+      border-color: #ff4bb4;
+    }
+    .album-title {
+      font-size: 11px;
+      margin-bottom: 8px;
+      border-bottom: 1px dotted #ccc;
+      padding-bottom: 4px;
+    }
+    .track-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      max-height: 105px;
+      overflow-y: auto;
+    }
+    .track-item {
+      padding: 2px 0;
+      cursor: pointer;
+    }
+    .track-item:hover {
+      text-decoration: underline;
+    }
+
+    /* Club Aniso Module (2) */
+    .aniso-desc {
+      line-height: 1.5;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    .aniso-links {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .aniso-links a {
+      text-decoration: underline;
+    }
+    .poster-container {
+      display: flex;
+      gap: 16px;
+    }
+    .poster-box {
+      flex: 1;
+      border: 1px solid #000000;
+      padding: 12px;
+      cursor: pointer;
+      background: #fafafa;
+      transition: background 0.2s;
+    }
+    .poster-box:hover {
+      background: #f0f0f0;
+    }
+    .event-detail-pane {
+      display: none;
+      border: 1px dashed #000;
+      margin-top: 14px;
+      padding: 12px;
+      white-space: pre-wrap;
+      line-height: 1.45;
+    }
+    .event-detail-pane.open {
+      display: block;
+    }
+    .recap-video {
+      background-color: #FFFACD;
+      height: 120px;
+      border: 1px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 10px;
+    }
+    .btn-ticket {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 6px 14px;
+      background-color: #b2d8e5;
+      color: #000;
+      border: 1px solid #000;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .btn-ticket:hover {
+      background-color: #9acbdc;
+    }
+
+    /* Forms Module (3 & 4) */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .form-group input, .form-group textarea {
+      font-family: 'Offbit', monospace;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1.5px solid #000000;
+      padding: 8px;
+      background: #FFFFFF;
+      outline: none;
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .btn-submit {
+      font-family: 'Offbit', monospace;
+      font-size: 11px;
+      font-weight: 900;
+      border: 1.5px solid #000000;
+      background: #000000;
+      color: #FFFFFF;
+      padding: 8px 18px;
+      cursor: pointer;
+      align-self: flex-start;
+      margin-top: 6px;
+    }
+    .btn-submit:hover {
+      background: #FFFFFF;
+      color: #000000;
+    }
+
+    /* Playlist Modal Dropdown */
+    #playlist-drawer {
+      position: absolute;
+      top: 32px;
+      right: 14px;
+      width: 280px;
+      max-height: 250px;
+      background: #ffffff;
+      border: 1.5px solid #000;
+      border-top: none;
+      z-index: 60;
+      display: none;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #playlist-drawer.open {
+      display: block;
+    }
+    .drawer-item {
+      padding: 4px 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .drawer-item:hover {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    /* --- Layer 4: Interactive Letter 'D' Canvas Cover --- */
+    #leaves-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+      pointer-events: auto;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SVG Filter for Jagged Liquid Distortion Effect -->
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" version="1.1">
+    <defs>
+      <filter id="jagged-distortion" x="-20%" y="-20%" width="140%" height="140%">
+        <feTurbulence id="svg-turb" type="turbulence" baseFrequency="0.08 0.95" numOctaves="3" result="turb" />
+        <feDisplacementMap id="svg-disp" in2="turb" in="SourceGraphic" scale="18" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Stars Emitter Background Canvas -->
+  <canvas id="stars-canvas"></canvas>
+
+  <!-- Central Core Box -->
+  <div id="core-box">
+    <!-- Header -->
+    <div id="header-bar">
+      <div class="header-left">
+        <span>dandelion cutter</span>
+        <span>⭒ ⭒ ⭒ ⭑ ⭒</span>
+        <span class="btn-heart" id="btn-heart">[♥]</span>
+        <span id="now-playing-label">Now Playing: Artist - Track 01</span>
+      </div>
+      <div class="header-right">
+        <a href="https://www.instagram.com/slllelllo/" target="_blank" rel="noopener noreferrer" class="ig-link">@slllelllo</a>
+      </div>
+    </div>
+
+    <!-- Playlist Drawer -->
+    <div id="playlist-drawer"></div>
+
+    <!-- Split Main View -->
+    <div id="split-body">
+      <!-- Left Menu Column -->
+      <div id="left-menu">
+        <div class="menu-item" data-module="module-albums" data-sfx="0" data-video="video-menu1.mp4">⭒ recommended albums</div>
+        <div class="menu-item" data-module="module-aniso" data-sfx="1" data-video="video-menu2.mp4">⭒ club aniso [event ticket booking]</div>
+        <div class="menu-item" data-module="module-radio" data-sfx="2" data-video="video-menu3.mp4">⭒ music radio host request</div>
+        <div class="menu-item" data-module="module-collab" data-sfx="3" data-video="video-menu4.mp4">⭒ collaboration request</div>
+      </div>
+
+      <!-- Right Video Looping Column -->
+      <div id="right-media">
+        <video id="stage-video" autoplay muted loop playsinline src="video-menu1.mp4" poster="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100%' height='100%' fill='%23111'/><text x='50%' y='50%' fill='%23666' font-size='10' dominant-baseline='middle' text-anchor='middle'>VIDEO FEED</text></svg>"></video>
+      </div>
+
+      <!-- MODULE 1: Recommended Albums -->
+      <div id="module-albums" class="module-overlay">
+        <div class="module-header">
+          <span>⭒ RECOMMENDED ALBUMS</span>
+          <span class="btn-close" data-close>✕ CLOSE</span>
+        </div>
+        <div class="album-grid">
+          <!-- Album 1 -->
+          <div class="album-card">
+            <div class="album-title">Instupendo & Ripsquad - Ripstupendo (2025)</div>
+            <ul class="track-list" data-album="Instupendo & Ripsquad - Ripstupendo">
+              <li class="track-item" data-title="Human Nature">1. Human Nature</li>
+              <li class="track-item" data-title="Gin">2. Gin</li>
+              <li class="track-item" data-title="b.Bass">3. b.Bass</li>
+              <li class="track-item" data-title="Paranoi">4. Paranoi</li>
+              <li class="track-item" data-title="Alwayz">5. Alwayz</li>
+              <li class="track-item" data-title="Zombie2">6. Zombie2</li>
+              <li class="track-item" data-title="Island">7. Island</li>
+              <li class="track-item" data-title="Twice">8. Twice</li>
+              <li class="track-item" data-title="Kissout">9. Kissout</li>
+              <li class="track-item" data-title="Zombie1">10. Zombie1</li>
+              <li class="track-item" data-title="Crow">11. Crow</li>
+            </ul>
+          </div>
+          <!-- Album 2 -->
+          <div class="album-card">
+            <div class="album-title">Mietze Conte - (L)ove(l)s(F)or(E)veryone (2026)</div>
+            <ul class="track-list" data-album="Mietze Conte - (L)ove(l)s(F)or(E)veryone">
+              <li class="track-item" data-title="i think the world">1. i think the world</li>
+              <li class="track-item" data-title="loveisforeveryone">2. loveisforeveryone</li>
+              <li class="track-item" data-title="4u2">3. 4u2</li>
+              <li class="track-item" data-title="painting on a monument">4. painting on a monument</li>
+              <li class="track-item" data-title="billy">5. billy</li>
+              <li class="track-item" data-title="lavender (feat. 1tbsp)">6. lavender (feat. 1tbsp)</li>
+              <li class="track-item" data-title="origami">7. origami</li>
+              <li class="track-item" data-title="paper plane">8. paper plane</li>
+              <li class="track-item" data-title="im hear 4 u">9. im hear 4 u</li>
+              <li class="track-item" data-title="begun_n">10. begun_n</li>
+              <li class="track-item" data-title="otherway">11. otherway</li>
+              <li class="track-item" data-title="angry">12. angry</li>
+              <li class="track-item" data-title="5678">13. 5678</li>
+              <li class="track-item" data-title="hier">14. hier</li>
+              <li class="track-item" data-title="ihaveapiano">15. ihaveapiano</li>
+              <li class="track-item" data-title="around o o">16. around o o</li>
+            </ul>
+          </div>
+          <!-- Album 3 -->
+          <div class="album-card">
+            <div class="album-title">Yawning Portal - Heart & Earth (2020)</div>
+            <ul class="track-list" data-album="Yawning Portal - Heart & Earth">
+              <li class="track-item" data-title="The Burning Bridge">1. The Burning Bridge</li>
+              <li class="track-item" data-title="Water Lvl">2. Water Lvl</li>
+              <li class="track-item" data-title="Make You Happy Housefire">3. Make You Happy Housefire</li>
+              <li class="track-item" data-title="Earthbound II">4. Earthbound II</li>
+              <li class="track-item" data-title="Cut to the Feeling">5. Cut to the Feeling</li>
+            </ul>
+          </div>
+          <!-- Album 4 -->
+          <div class="album-card">
+            <div class="album-title">Cedric Madden - CMi (2026)</div>
+            <ul class="track-list" data-album="Cedric Madden - CMi">
+              <li class="track-item" data-title="Omg..">1. Omg..</li>
+              <li class="track-item" data-title="cO9">2. cO9</li>
+              <li class="track-item" data-title="Venice">3. Venice</li>
+              <li class="track-item" data-title="Island((heartbreak))">4. Island((heartbreak))</li>
+              <li class="track-item" data-title="Été26">5. Été26</li>
+              <li class="track-item" data-title="cibo">6. cibo</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODULE 2: Club Aniso -->
+      <div id="module-aniso" class="module-overlay">
+        <div class="module-header">
+          <span>⭒ CLUB ANISO [EVENT TICKET BOOKING]</span>
+          <span class="btn-close" data-close>✕ CLOSE</span>
+        </div>
+        <div class="aniso-desc">
+          club aniso는 이방성 광물(Anisotropic mineral)의 이미지를 빌려, 로컬 씬의 생동감 넘치는 면모를 다채로운 라인업과 라이브 비주얼로 풀어나갑니다.
+        </div>
+        <div class="aniso-links">
+          <a href="https://www.instagram.com/clubaniso/" target="_blank">★ ig @clubaniso</a>
+          <a href="#" target="_blank">☆ aniso on visla.fm [soundcloud]</a>
+          <a href="#" target="_blank">☆ aniso on visla.fm [youtube]</a>
+        </div>
+        <div class="poster-container">
+  <div class="poster-box" id="poster-1-btn" style="padding: 0;">
+    <img src="poster-1.jpg" style="width: 100%; display: block;">
+  </div>
+  <div class="poster-box" id="poster-2-btn" style="padding: 0;">
+    <img src="poster-2.jpg" style="width: 100%; display: block;">
+  </div>
+</div>
+
+        <div id="event-detail-1" class="event-detail-pane" style="display: block;">
+09/18 FRI 7PM
+Lineup: DJ A, DJ B, Visuals by C.
+Special live session & underground sounds.
+
+TICKETS CLOSED
+          <video src="recap.mp4" controls style="width: 100%; height: 160px; object-fit: cover; border: 1px solid #000; background: #000;"></video>
+        </div>
+
+        <div id="event-detail-2" class="event-detail-pane" style="display: block;">
+[ club aniso with UNIT KAI
+
+11월 21일 club aniso가 축제를 아득한 빛으로 뒤덮습니다. 공간 전체를 아우르는 비주얼과 설치물 위로 라이브 퍼포먼스와 디제잉, 그리고 스페셜 게스트 UNIT KAI의 음악이 이어집니다.
+
+UNIT KAI는 도쿄를 기반으로 활동하는 미국의 프로듀서로, 따뜻한 화성 진행과 섬세한 멜로디를 통해 아름답고도 아련한 세계를 만들어냅니다. 그의 최근 작업은 2000년대의 비주얼 노벨과 한국 MMORPG의 사운드 팔레트, 그리고 일본 테크노팝의 밝은 감성에서 특히 큰 영향을 받았습니다.
+
+11/21 SAT 8PM - 1AM
+@festivalfestivalseoul
+
+Music
+UNIT KAI (DJ) @unitkai
+jihon (Live) @sjhyng
+Noi (DJ) @akaiforehead
+vizita Q (DJ) @vizita_q
+Moon Go America (DJ) @moongoamerica
+DDD (DJ) @dddd35u
+Guinneissik (DJ) @guinneissik
+
+Visuals & Installations
+Direction seoyeon @slllelllo
+Assistant Kwak Minjoo @ihatetomato0o0
+
+Tickets available in @clubaniso bio
+ADV 20,000 / Doors 30,000
+1 drink purchase required ]
+          <br>
+          <a href="https://clubaniso.moss.events/" target="_blank" class="btn-ticket">BOOK TICKET</a>
+        </div>
+      </div>
+
+      <!-- MODULE 3: Radio Host Request -->
+      <div id="module-radio" class="module-overlay">
+        <div class="module-header">
+          <span>⭒ MUSIC RADIO HOST REQUEST</span>
+          <span class="btn-close" data-close>✕ CLOSE</span>
+        </div>
+        <form onsubmit="event.preventDefault(); alert('Radio host request submitted.');">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" required placeholder="Enter host name">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" required placeholder="contact@domain.com">
+          </div>
+          <div class="form-group">
+            <label>Broadcast Name</label>
+            <input type="text" required placeholder="Radio show title">
+          </div>
+          <div class="form-group">
+            <label>Genre</label>
+            <input type="text" required placeholder="Ambient / IDM / Hyperpop / Club...">
+          </div>
+          <button type="submit" class="btn-submit">SUBMIT REQUEST</button>
+        </form>
+      </div>
+
+      <!-- MODULE 4: Collaboration Request -->
+      <div id="module-collab" class="module-overlay">
+        <div class="module-header">
+          <span>⭒ COLLABORATION REQUEST</span>
+          <span class="btn-close" data-close>✕ CLOSE</span>
+        </div>
+        <form onsubmit="event.preventDefault(); alert('Collaboration request sent.');">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" required placeholder="Your name or collective">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" required placeholder="contact@domain.com">
+          </div>
+          <div class="form-group">
+            <label>Proposal Detail</label>
+            <textarea required placeholder="Describe your project, timeline, and vision..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Attachment / Portfolio Reference</label>
+            <input type="file">
+          </div>
+          <button type="submit" class="btn-submit">SEND PROPOSAL</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Canvas Cover (The 'D' Leaves) -->
+  <canvas id="leaves-canvas"></canvas>
+
+  <script>
+    /* ==========================================================================
+       1. SYNTHESIZED PROCEDURAL SCI-FI AUDIO & SOUND ENGINE
+       ========================================================================== */
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let audioStarted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      audioStarted = true;
+    }
+
+    // 4 Unique Sci-Fi UI Sound Effects
+    function playSciFiSFX(index) {
+      initAudio();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (index === 0) {
+        // High-tech laser warp chirp
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.18);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      } else if (index === 1) {
+        // Resonant cyber blip / glitch ring
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(2400, now + 0.08);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.22);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } else if (index === 2) {
+        // Sub-spatial data pulse
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(55, now + 0.25);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      } else if (index === 3) {
+        // Futuristic teleport / shield activation
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(1600, now + 0.12);
+        osc.frequency.linearRampToValueAtTime(800, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    }
+
+    /* ==========================================================================
+       2. 50 AUDIO TRACKS PLAYLIST & BACKGROUND PLAYER
+       ========================================================================== */
+    // 여기에 실제 곡 제목 50개를 순서대로 적어주세요.
+const realTitles = [
+      // Cedric Madden[cite: 4]
+      "Cedric Madden - cO9",
+      "Cedric Madden - Venice",
+      "Cedric Madden - Island((heartbreak))",
+      "Cedric Madden - Été26",
+      "Cedric Madden - cibo",
+
+      // Yawning Portal[cite: 5]
+      "Yawning Portal - The Burning Bridge",
+      "Yawning Portal - Water Lvl",
+      "Yawning Portal - Make You Happy Housefire",
+      "Yawning Portal - Earthbound II",
+      "Yawning Portal - Cut to the Feeling",
+
+      // Instupendo, Ripsquad[cite: 6]
+      "Instupendo, Ripsquad - Human Nature",
+      "Instupendo, Ripsquad - Gin",
+      "Instupendo, Ripsquad - b.Bass",
+      "Instupendo, Ripsquad - Paranoi",
+      "Instupendo, Ripsquad - Alwayz",
+      "Instupendo, Ripsquad - Zombie2",
+      "Instupendo, Ripsquad - Island",
+      "Instupendo, Ripsquad - Twice",
+      "Instupendo, Ripsquad - Kissout",
+      "Instupendo, Ripsquad - Zombie1",
+      "Instupendo, Ripsquad - Crow",
+
+      // james K[cite: 7]
+      "james K - Days Go By",
+      "james K - Blinkmoth (July Mix)",
+      "james K - Doom Bikini",
+      "james K - Idea.2",
+      "james K - N'Balmed",
+      "james K - Rider",
+      "james K - On God",
+      "james K - Peel",
+      "james K - Lude (unwind)",
+      "james K - Play",
+      "james K - Lung Slide",
+      "james K - Hypersoft Lovejinx Junkdream",
+      "james K - Collapse (falling forward blissfully all the...",
+
+      // Instupendo[cite: 8]
+      "Instupendo - Reaching For The Nerve",
+      "Instupendo - Idol",
+      "Instupendo - Be U",
+      "Instupendo, Oli XL - Vitamin",
+      "Instupendo - Clay Me",
+      "Instupendo - Gummy",
+      "Instupendo - Dream Drop",
+      "Instupendo, Oli XL - Ribbon Bone - Chalk Dancer",
+      "Instupendo - Love Power A-to-Z",
+      "Instupendo - Perfume",
+
+      // mietze conte[cite: 9, 10, 11]
+      "mietze conte - i think the world",
+      "mietze conte - painting on a monument",
+      "mietze conte - billy",
+
+      // Oli XL[cite: 12]
+      "Oli XL - Cygnostik",
+      "Oli XL - Liquid Love",
+      "Oli XL - DnL",
+      "Oli XL - Mimetic",
+      "Oli XL - Jet Generation",
+      "Oli XL - Flower Circuit",
+      "Oli XL, Ecco2k - Hesitate",
+      "Oli XL - Orchid Itch",
+      "Oli XL - Imposter",
+      "Oli XL - Clumsy",
+      "Oli XL - Sniper Baby"
+    ];
+
+    const tracks = [];
+    for (let i = 0; i < realTitles.length; i++) {
+      tracks.push({
+        id: i + 1,
+        title: realTitles[i],
+        src: `audio/track (${i + 1}).mp3` 
+      });
+    }
+    let currentTrackIdx = 0;
+    const nowPlayingLabel = document.getElementById('now-playing-label');
+    const playlistDrawer = document.getElementById('playlist-drawer');
+    const btnHeart = document.getElementById('btn-heart');
+
+    // --- 누락되었던 실제 오디오 재생 엔진 추가 ---
+    const bgmPlayer = new Audio();
+    bgmPlayer.volume = 0.5; // 배경음악 볼륨 50%
+
+    // 곡이 끝나면 다음 곡으로 자동 재생
+    bgmPlayer.addEventListener('ended', () => {
+      currentTrackIdx = (currentTrackIdx + 1) % tracks.length;
+      playCurrentTrack();
+    });
+
+    // 곡 재생 함수
+    function playCurrentTrack() {
+      nowPlayingLabel.textContent = `Now Playing: ${tracks[currentTrackIdx].title}`;
+      bgmPlayer.src = tracks[currentTrackIdx].src;
+      bgmPlayer.play().catch(err => console.log("클릭 대기 중..."));
+    }
+
+    // 첫 화면 흩어지는 'D' 잎사귀들을 누르거나, 빈 공간을 처음 클릭할 때 음악 시작 (자동재생 차단 우회)
+    let isFirstClick = true;
+    window.addEventListener('click', () => {
+      if (isFirstClick) {
+        playCurrentTrack();
+        isFirstClick = false;
+      }
+    });
+
+    // 플레이리스트 모듈 세팅
+    tracks.forEach((t, idx) => {
+      const item = document.createElement('div');
+      item.className = 'drawer-item';
+      item.textContent = `${idx + 1}. ${t.title}`;
+      item.addEventListener('click', (e) => {
+        currentTrackIdx = idx;
+        playCurrentTrack();
+        if (!audioStarted) initAudio(); // SFX 엔진 동시 활성화
+        isFirstClick = false;
+      });
+      playlistDrawer.appendChild(item);
+    });
+
+    // 하트 버튼 클릭 시 플레이리스트 서랍 열기
+    btnHeart.addEventListener('click', (e) => {
+      e.stopPropagation();
+      playlistDrawer.classList.toggle('open');
+    });
+    /* ==========================================================================
+       3. INTERACTIVE CANVAS COVER (MASSIVE DENSE 'D' LEAVES)
+       ========================================================================== */
+    const leavesCanvas = document.getElementById('leaves-canvas');
+    const leavesCtx = leavesCanvas.getContext('2d');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    function resizeCanvases() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      leavesCanvas.width = width;
+      leavesCanvas.height = height;
+      starsCanvas.width = width;
+      starsCanvas.height = height;
+    }
+
+    const mouse = { x: -9999, y: -9999, px: -9999, py: -9999, vx: 0, vy: 0 };
+    window.addEventListener('mousemove', (e) => {
+      if (!audioStarted) initAudio();
+      mouse.vx = e.clientX - mouse.x;
+      mouse.vy = e.clientY - mouse.y;
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    // Generate massive dense pile of 'D' characters clustered in center
+    const D_COUNT = 520;
+    const dLeaves = [];
+
+    class DLeaf {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        // Clustered like fallen leaves over center
+        const rad = Math.random() * (Math.min(width, height) * 0.46);
+        const theta = Math.random() * Math.PI * 2;
+        this.x = width / 2 + Math.cos(theta) * rad + (Math.random() - 0.5) * 80;
+        this.y = height / 2 + Math.sin(theta) * rad + (Math.random() - 0.5) * 80;
+
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.size = Math.floor(Math.random() * 55) + 38; // massive 'D'
+        this.angle = Math.random() * Math.PI * 2;
+        this.vAngle = (Math.random() - 0.5) * 0.03;
+        this.weight = 0.8 + Math.random() * 0.7;
+        this.friction = 0.94;
+        this.isOffscreen = false;
+      }
+
+      update() {
+        // Repulsion physics from mouse
+        const dx = this.x - mouse.x;
+        const dy = this.y - mouse.y;
+        const dist = Math.hypot(dx, dy);
+        const repelRadius = 220;
+
+        if (dist < repelRadius) {
+          const force = (1 - dist / repelRadius) * 28;
+          const angle = Math.atan2(dy, dx);
+          this.vx += Math.cos(angle) * force + mouse.vx * 0.15;
+          this.vy += Math.sin(angle) * force + mouse.vy * 0.15;
+          this.vAngle += (Math.random() - 0.5) * 0.25;
+        }
+
+        this.vx *= this.friction;
+        this.vy *= this.friction;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.vAngle;
+        this.vAngle *= 0.96;
+
+        // Check bounds
+        if (
+          this.x < -150 ||
+          this.x > width + 150 ||
+          this.y < -150 ||
+          this.y > height + 150
+        ) {
+          this.isOffscreen = true;
+        }
+      }
+
+      draw(ctx) {
+        if (this.isOffscreen) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        // Bold Helvetica required
+        ctx.font = `900 ${this.size}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // Drop shadow for subtle contrast against white background
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 3;
+
+        // Pure white fill
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText('D', 0, 0);
+
+        // Very light gray outline stroke for depth
+        ctx.shadowColor = 'transparent';
+        ctx.strokeStyle = '#e2e2e2';
+        ctx.lineWidth = 1;
+        ctx.strokeText('D', 0, 0);
+
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < D_COUNT; i++) {
+      dLeaves.push(new DLeaf());
+    }
+
+    /* Check if center is largely cleared to allow clicks through canvas */
+    function checkCanvasPassThrough() {
+      const box = document.getElementById('core-box').getBoundingClientRect();
+      let dInBox = 0;
+      for (let d of dLeaves) {
+        if (
+          !d.isOffscreen &&
+          d.x >= box.left &&
+          d.x <= box.right &&
+          d.y >= box.top &&
+          d.y <= box.bottom
+        ) {
+          dInBox++;
+        }
+      }
+      // If enough Ds cleared from view, enable user to click into the UI easily
+      if (dInBox < 40) {
+        leavesCanvas.style.pointerEvents = 'none';
+      }
+    }
+
+    /* ==========================================================================
+       4. STAR EMITTER CANVAS (BORDER OF VIDEO ELEMENT)
+       ========================================================================== */
+    const starsCanvas = document.getElementById('stars-canvas');
+    const starsCtx = starsCanvas.getContext('2d');
+    const stars = [];
+
+    class VideoBorderStar {
+      constructor(spawnRect) {
+        this.init(spawnRect);
+      }
+
+      init(rect) {
+        // Pick random edge of the video placeholder
+        const edge = Math.floor(Math.random() * 4);
+        if (edge === 0) { // Top
+          this.x = rect.left + Math.random() * rect.width;
+          this.y = rect.top;
+          this.vx = (Math.random() - 0.5) * 0.8;
+          this.vy = -0.5 - Math.random() * 0.8;
+        } else if (edge === 1) { // Right
+          this.x = rect.right;
+          this.y = rect.top + Math.random() * rect.height;
+          this.vx = 0.5 + Math.random() * 0.8;
+          this.vy = (Math.random() - 0.5) * 0.8;
+        } else if (edge === 2) { // Bottom
+          this.x = rect.left + Math.random() * rect.width;
+          this.y = rect.bottom;
+          this.vx = (Math.random() - 0.5) * 0.8;
+          this.vy = 0.5 + Math.random() * 0.8;
+        } else { // Left
+          this.x = rect.left;
+          this.y = rect.top + Math.random() * rect.height;
+          this.vx = -0.5 - Math.random() * 0.8;
+          this.vy = (Math.random() - 0.5) * 0.8;
+        }
+
+        this.size = Math.random() * 8 + 10;
+        this.opacity = 0.85;
+        this.life = 0;
+        this.maxLife = 280 + Math.random() * 120;
+      }
+
+      update(rect) {
+        this.life++;
+        // Cursor dodge physics
+        const dx = this.x - mouse.x;
+        const dy = this.y - mouse.y;
+        const dist = Math.hypot(dx, dy);
+        const dodgeRadius = 120;
+
+        if (dist < dodgeRadius && dist > 0) {
+          const force = (1 - dist / dodgeRadius) * 4;
+          this.vx += (dx / dist) * force;
+          this.vy += (dy / dist) * force;
+        }
+
+        this.vx *= 0.97;
+        this.vy *= 0.97;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.life > this.maxLife) {
+          this.init(rect);
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.font = `${this.size}px monospace, 'Offbit'`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = Math.max(0, 1 - (this.life / this.maxLife));
+        ctx.fillText('✭', this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    const STAR_COUNT = 60;
+    function initStars() {
+      const vRect = document.getElementById('right-media').getBoundingClientRect();
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const s = new VideoBorderStar(vRect);
+        s.life = Math.random() * s.maxLife; // stagger
+        stars.push(s);
+      }
+    }
+
+    /* ==========================================================================
+       5. MAIN ANIMATION LOOP
+       ========================================================================== */
+    function render() {
+      // Clear star canvas
+      starsCtx.clearRect(0, 0, width, height);
+      const vRect = document.getElementById('right-media').getBoundingClientRect();
+      for (let s of stars) {
+        s.update(vRect);
+        s.draw(starsCtx);
+      }
+
+      // Clear Leaves Canvas
+      leavesCtx.clearRect(0, 0, width, height);
+      for (let d of dLeaves) {
+        d.update();
+        d.draw(leavesCtx);
+      }
+
+      checkCanvasPassThrough();
+      requestAnimationFrame(render);
+    }
+
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+    initStars();
+    requestAnimationFrame(render);
+
+    /* ==========================================================================
+       6. MENU INTERACTIONS: DISTORTION, VIDEO CHANGE, SFX, & MODULES
+       ========================================================================== */
+    const menuItems = document.querySelectorAll('.menu-item');
+    const stageVideo = document.getElementById('stage-video');
+    const turbNode = document.getElementById('svg-turb');
+    const dispNode = document.getElementById('svg-disp');
+
+    menuItems.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const sfxIdx = parseInt(btn.getAttribute('data-sfx'), 10);
+        const nextVideo = btn.getAttribute('data-video');
+        const targetModuleId = btn.getAttribute('data-module');
+
+        // 1. Play Unique Sci-Fi SFX
+        playSciFiSFX(sfxIdx);
+
+        // 2. Dynamic Video Switch
+        if (stageVideo) {
+          stageVideo.src = nextVideo;
+          stageVideo.play().catch(() => {});
+        }
+
+        // 3. SVG Jagged Liquid Distortion Trigger
+        btn.classList.add('distort-active');
+        let frames = 0;
+        function animateFilter() {
+          frames++;
+          // Shift base frequency & scale wildly to create jagged, liquid rip
+          const freqX = (0.05 + Math.random() * 0.12).toFixed(3);
+          const freqY = (0.7 + Math.random() * 0.5).toFixed(3);
+          turbNode.setAttribute('baseFrequency', `${freqX} ${freqY}`);
+          dispNode.setAttribute('scale', (20 + Math.random() * 25).toFixed(1));
+
+          if (frames < 24) {
+            requestAnimationFrame(animateFilter);
+          } else {
+            btn.classList.remove('distort-active');
+            dispNode.setAttribute('scale', '0');
+          }
+        }
+        requestAnimationFrame(animateFilter);
+
+        // 4. Open Module Overlay
+        if (targetModuleId) {
+          document.querySelectorAll('.module-overlay').forEach(m => m.classList.remove('active'));
+          const target = document.getElementById(targetModuleId);
+          if (target) target.classList.add('active');
+        }
+      });
+    });
+
+    // Close buttons on overlays
+    document.querySelectorAll('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.closest('.module-overlay').classList.remove('active');
+      });
+    });
+
+    /* ==========================================================================
+       7. MODULE DETAILS: TRACK CLICKS & POSTER TOGGLES
+       ========================================================================== */
+    // Album Tracks Click: Lyrics & YouTube Prompt
+    document.querySelectorAll('.track-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const title = item.getAttribute('data-title');
+        const album = item.closest('.track-list').getAttribute('data-album');
+        const query = encodeURIComponent(`${album} ${title}`);
+        const ytUrl = `https://www.youtube.com/results?search_query=${query}`;
+        alert(`[NOW PLAYING DETAILS]\nTrack: ${title}\nAlbum: ${album}\n\n[LYRICS PLACEHOLDER]\n...Echoing signals drifting into digital ether...\n\nOpening YouTube search.`);
+        window.open(ytUrl, '_blank');
+      });
+    });
+
+    // Club Aniso Posters Toggle
+    const p1Btn = document.getElementById('poster-1-btn');
+    const p2Btn = document.getElementById('poster-2-btn');
+    const d1 = document.getElementById('event-detail-1');
+    const d2 = document.getElementById('event-detail-2');
+
+    p1Btn.addEventListener('click', () => {
+      d1.classList.toggle('open');
+      d2.classList.remove('open');
+    });
+
+    p2Btn.addEventListener('click', () => {
+      d2.classList.toggle('open');
+      d1.classList.remove('open');
+    });
+
+    // Close Playlist drawer on outside click
+    window.addEventListener('click', (e) => {
+      if (!btnHeart.contains(e.target) && !playlistDrawer.contains(e.target)) {
+        playlistDrawer.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

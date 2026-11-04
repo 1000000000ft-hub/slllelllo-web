@@ -23,6 +23,7 @@
     body {
       margin: 0;
       overflow: hidden;
+      touch-action: none;
       height: 100vh;
       width: 100vw;
       display: flex;
@@ -393,6 +394,12 @@
       z-index: 100;
       pointer-events: auto;
       cursor: default;
+    @media (max-width: 900px) {
+      #core-box {
+        transform: scale(0.42);
+        transform-origin: center;
+      }
+    }
     }
   </style>
 </head>
@@ -866,6 +873,26 @@ const realTitles = [
       mouse.vy = e.clientY - mouse.y;
       mouse.x = e.clientX;
       mouse.y = e.clientY;
+    });
+
+window.addEventListener('touchmove', (e) => {
+      if (!audioStarted) initAudio();
+      const touch = e.touches[0];
+      mouse.vx = touch.clientX - mouse.x;
+      mouse.vy = touch.clientY - mouse.y;
+      mouse.x = touch.clientX;
+      mouse.y = touch.clientY;
+    });
+
+    window.addEventListener('touchstart', (e) => {
+      if (isFirstClick) {
+        playCurrentTrack();
+        isFirstClick = false;
+      }
+      if (!audioStarted) initAudio();
+      const touch = e.touches[0];
+      mouse.x = touch.clientX;
+      mouse.y = touch.clientY;
     });
 
     // Generate massive dense pile of 'D' characters clustered in center
